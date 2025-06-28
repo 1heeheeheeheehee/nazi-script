@@ -1,0 +1,91 @@
+-- SERVICES
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+-- SETUP
+local player = Players.LocalPlayer
+UserInputService.MouseIconEnabled = false
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "CustomCursorSymbol"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- CONTAINER for Rotation
+local rotateFrame = Instance.new("Frame")
+rotateFrame.Size = UDim2.new(0, 40, 0, 40)
+rotateFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+rotateFrame.BackgroundTransparency = 1
+rotateFrame.Position = UDim2.new(0, 0, 0, 0)
+rotateFrame.Parent = gui
+
+-- Function to create symbol (used for main + outline)
+local function createSymbol(textColor, offset)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 40, 0, 40)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.new(0.5, offset.X, 0.5, offset.Y)
+	label.Text = "卐"
+	label.TextSize = 34 -- Increased from 28
+	label.TextColor3 = textColor
+	label.Font = Enum.Font.GothamBold
+	label.ZIndex = 2
+	return label
+end
+
+-- Add outline (4 directions)
+local outlineOffsets = {
+	Vector2.new(-1, 0),
+	Vector2.new(1, 0),
+	Vector2.new(0, -1),
+	Vector2.new(0, 1),
+}
+
+for _, offset in ipairs(outlineOffsets) do
+	local outline = createSymbol(Color3.new(0, 0, 0), offset)
+	outline.ZIndex = 1
+	outline.Parent = rotateFrame
+end
+
+-- Main symbol
+local symbolLabel = createSymbol(Color3.fromRGB(139, 0, 0), Vector2.new(0, 0))
+symbolLabel.ZIndex = 2
+symbolLabel.Parent = rotateFrame
+
+-- ROTATION + FOLLOW MOUSE + TRAIL
+local rotation = 0
+
+RunService.RenderStepped:Connect(function(dt)
+	local pos = UserInputService:GetMouseLocation()
+	local adjustedY = pos.Y - 53 - 5
+
+	rotateFrame.Position = UDim2.new(0, pos.X, 0, adjustedY)
+
+	-- Spin the main symbol
+	rotation = (rotation + 60 * dt) % 360
+	for _, child in pairs(rotateFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child.Rotation = rotation
+		end
+	end
+
+	-- Create ghost trail
+	local ghost = symbolLabel:Clone()
+	ghost.Position = UDim2.new(0, pos.X, 0, adjustedY)
+	ghost.Rotation = rotation
+	ghost.TextTransparency = 0.2
+	ghost.BackgroundTransparency = 1
+	ghost.Parent = gui
+
+	local tweenInfo = TweenInfo.new(0.05, Enum.EasingStyle.Linear)
+	local fadeTween = TweenService:Create(ghost, tweenInfo, { TextTransparency = 1 })
+
+	fadeTween:Play()
+	fadeTween.Completed:Connect(function()
+		ghost:Destroy()
+	end)
+end)
